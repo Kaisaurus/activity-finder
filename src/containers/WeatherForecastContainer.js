@@ -2,14 +2,26 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { getLocWeather } from '../actions/weatherActions';
+import WeatherCard from '../components/WeatherCard';
+import { Loader } from 'semantic-ui-react';
 
 class WeatherContainer extends React.Component {
   static propTypes = {
-    weather: PropTypes.array,
-    fetching: PropTypes.bool,
+    autoFetching: PropTypes.bool.isRequired,
+    cityFetching: PropTypes.bool.isRequired,
+    city: PropTypes.string,
+    country: PropTypes.string,
+    weather: PropTypes.object,
   }
 
   componentWillMount() {
+    const { city } = this.props;
+    if(!city){
+      this.autoFetchWeather();
+    }
+  }
+
+  autoFetchWeather() {
     if ("geolocation" in navigator) {
       /* geolocation is available */
       navigator
@@ -20,34 +32,59 @@ class WeatherContainer extends React.Component {
     } else {
       /* geolocation is not available */
       this.onLocError();
-      // api.openweathermap.org/data/2.5/forecast?id={city ID}&APPID={config.OpenWeatherMapAPIKey}
     }
   }
 
-  onLocSuccess(pos){
+  onLocSuccess(pos) {
     const { latitude, longitude } = pos.coords;
     this.props.getLocWeather(latitude, longitude);
-
-    // fetch(`api.openweathermap.org/data/2.5/forecast?lat=${longitude}&lon=${latitude}&APPID=${config.OpenWeatherMapAPIKey}`)
-    //   .then(resp => console.log(resp));
   }
 
-  onLocError(){
-    console.log('meh');
+  onLocError() {
+    console.log('Could not retrieve geoLoc');
+  }
+
+  generateWeatherForecast() {
+    const { fetchFailed, autoFetching, cityFetching, city, weather, country } = this.props;
+    if (fetchFailed) {
+      return <p> Failed to fetch weather data... Please try again. </p>
+    }
+    if (city) {
+      return (
+        <WeatherCard
+          weather={ weather }
+          country={ country }
+          city={ city }
+        />
+      );
+    } else if (autoFetching) {
+      return <p> Auto fetching weather... </p>
+    } else if (cityFetching) {
+      return <p> Fetching weather </p>
+    } else {
+      return <p> Auto-location tracking not working, Try search for your city manually </p>
+    }
   }
 
   render() {
+    const { autoFetching, cityFetching } = this.props;
+
     return (
       <div>
-        boo
+        <Loader active={ autoFetching || cityFetching } />
+        { this.generateWeatherForecast() }
       </div>
-    );
+    )
   }
 }
 
 const mapStateToProps = ({ weather }) => ({
-  fetching: weather.fetching,
+  autoFetching: weather.autoFetching,
+  cityFetching: weather.cityFetching,
+  city: weather.city,
+  country: weather.country,
   weather: weather.weather,
+  fetchFailed: weather.fetchFailed,
 });
 
 export default connect(

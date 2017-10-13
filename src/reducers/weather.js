@@ -2,31 +2,55 @@ import * as types from '../actions/types';
 
 const defaultState = {
   weather: null,
-  fetching: false,
+  autoFetching: false,
+  cityFetching: false,
   city: null,
   country: null,
+  list: null,
+  code: null,
 };
 
 const weather = (state = defaultState, action) => {
   switch (action.type) {
-  case types.FETCHING_WEATHER:
+  case types.AUTO_FETCHING_WEATHER:
     return {
       ...state,
-      fetching: true
+      fetchFailed: false,
+      autoFetching: true,
+    }
+  case types.CITY_FETCHING_WEATHER:
+    return {
+      ...state,
+      fetchFailed: false,
+      cityFetching: true,
     }
   case types.GET_WEATHER_FULFILLED:
     const { name, country } = action.payload.city;
     return {
       ...state,
-      fetching: false,
+      autoFetching: false,
+      cityFetching: false,
       city: name,
       country,
-      weather: action.payload.list,
+      weather: action.payload.list[0],
+      code: action.payload.list[0].weather[0].id,
+    }
+  case types.GET_CITY_WEATHER_FULFILLED:
+    return {
+      ...state,
+      autoFetching: false,
+      cityFetching: false,
+      city: action.payload.name,
+      country: action.payload.sys.country,
+      weather: action.payload,
+      code: action.payload.weather[0].id,
     }
   case types.GET_WEATHER_FAILED:
     return {
       ...state,
-      fetching: false,
+      autoFetching: false,
+      cityFetching: false,
+      fetchFailed: true,
     }
   default:
     return state;
